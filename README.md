@@ -4,9 +4,6 @@ This project is a Snake game that uses a linked list to represent the snakes's b
 ## Live Deployment Link:
 Render : https://vipervortex1.onrender.com/
 
-Vercel : https://viper-vortex-himanshu.vercel.app/
-
-
 ## Available Scripts
 In the project directory, you can run:
 
