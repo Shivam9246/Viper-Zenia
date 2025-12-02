@@ -24,3 +24,44 @@
   .cell-purple {
     background-color: purple;
   }
+
+  .overlay {
+    position: fixed;
+    left: 0;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(0,0,0,0.5);
+  }
+
+  .game-over {
+    background: white;
+    padding: 24px 32px;
+    border-radius: 8px;
+    text-align: center;
+    box-shadow: 0 6px 18px rgba(0,0,0,0.2);
+    color: #222;
+    min-width: 220px;
+  }
+
+  .game-over h2 { margin: 0 0 8px 0; }
+  .game-over p { margin: 6px 0; }
+
+  .new-game-btn {
+    margin-top: 12px;
+    padding: 8px 16px;
+    border: none;
+    background: #6072c8;
+    color: white;
+    border-radius: 4px;
+    cursor: pointer;
+  }
+
+  .new-game-btn:hover { opacity: 0.95; }
+
+  .overlay { z-index: 1000; }
+
+.cell-obstacle { background: #444; }

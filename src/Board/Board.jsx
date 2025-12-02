@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import 
 {
     randomIntFromInterval,
@@ -50,9 +50,10 @@ const getStartingSnakeLLValue = board => {
     };
 };
 
-const Board = () => {
+const Board = ({ level = 1, onExit = () => {} }) => {
     const [score, setScore] = useState(0);
-    const [board, setBoard] = useState(createBoard(BOARD_SIZE));
+    const [highScore, setHighScore] = useState(0);
+    const [board] = useState(() => createBoard(BOARD_SIZE));
     const [snake, setSnake] = useState(
         new LinkedList(getStartingSnakeLLValue(board)),
     );
@@ -65,27 +66,53 @@ const Board = () => {
     const [foodShouldReverseDirection, setFoodShouldReverseDirection] = useState(
         false,
     );
+    const [gameOver, setGameOver] = useState(false);
+    const [obstacles, setObstacles] = useState(new Set());
 
-    useEffect(() => {
-        window.addEventListener('keydown', e => {
-            handleKeydown(e);
-        });
-    }, []);
-
-    useInterval(() => {
-        moveSnake();
-    }, 150);
-
-    const handleKeydown = e => {
+    const handleKeydown = useCallback(e => {
         const newDirection = getDirectionFromKey(e.key);
         const isValidDirection = newDirection !== '';
         if (!isValidDirection) return;
         const snakeWillRunIntoItself =
             getOppositeDirection(newDirection) === direction && snakeCells.size > 1;
-        
+
         if (snakeWillRunIntoItself) return;
         setDirection(newDirection);
-    };
+    }, [direction, snakeCells]);
+
+    useEffect(() => {
+        window.addEventListener('keydown', handleKeydown);
+        return () => window.removeEventListener('keydown', handleKeydown);
+    }, [handleKeydown]);
+
+    // Pause interval when game is over by passing `null` as delay.
+    useInterval(() => {
+        moveSnake();
+    }, gameOver ? null : 150);
+
+    // Read high score from localStorage on mount.
+    useEffect(() => {
+        try {
+            const stored = localStorage.getItem('snake_high_score');
+            if (stored) setHighScore(Number(stored));
+        } catch (e) {
+            // ignore storage failures
+        }
+    }, []);
+
+    // generate obstacles for level 2 (avoid the starting cell)
+    useEffect(() => {
+        if (level !== 2) {
+            setObstacles(new Set());
+            return;
+        }
+        const count = Math.max(8, Math.floor((BOARD_SIZE * BOARD_SIZE) * 0.08));
+        const starting = getStartingSnakeLLValue(board);
+        const cells = createObstacles(board, count, starting.cell);
+        setObstacles(cells);
+    }, [level, board]);
+
+    
 
     const moveSnake = () => {
         const currentHeadCoords = {
@@ -95,11 +122,16 @@ const Board = () => {
 
         const nextHeadCoords = getCoordsInDirection(currentHeadCoords, direction);
         if (isOutOfBounds(nextHeadCoords, board)) {
+            // end the game instead of resetting immediately
             handleGameOver();
             return;
         }
         const nextHeadCell = board[nextHeadCoords.row][nextHeadCoords.col];
         if (snakeCells.has(nextHeadCell)) {
+            handleGameOver();
+            return;
+        }
+        if (obstacles.has(nextHeadCell)) {
             handleGameOver();
             return;
         }
@@ -129,6 +161,23 @@ const Board = () => {
         }
 
         setSnakeCells(newSnakeCells);
+    };
+
+    const startNewGame = () => {
+        const starting = getStartingSnakeLLValue(board);
+        const newSnake = new LinkedList(starting);
+        setSnake(newSnake);
+        setSnakeCells(new Set([newSnake.head.value.cell]));
+        setFoodCell(newSnake.head.value.cell + 5);
+        setDirection(Direction.RIGHT);
+        setFoodShouldReverseDirection(false);
+        setScore(0);
+        setGameOver(false);
+        // regenerate obstacles if level 2
+        if (level === 2) {
+            const count = Math.max(8, Math.floor((BOARD_SIZE * BOARD_SIZE) * 0.08));
+            setObstacles(createObstacles(board, count, newSnake.head.value.cell));
+        }
     };
 
     // This function mutates newSnakeCells.
@@ -173,7 +222,11 @@ const Board = () => {
         // a valid new food cell--so an average of 10 operations: trivial.
         while (true) {
             nextFoodCell = randomIntFromInterval(1, maxPossibleCellValue);
-            if (newSnakeCells.has(nextFoodCell) || foodCell === nextFoodCell)
+            if (
+                newSnakeCells.has(nextFoodCell) ||
+                foodCell === nextFoodCell ||
+                (obstacles && obstacles.has(nextFoodCell))
+            )
                 continue;
             break;
         }
@@ -183,16 +236,22 @@ const Board = () => {
 
         setFoodCell(nextFoodCell);
         setFoodShouldReverseDirection(nextFoodShouldReverseDirection);
-        setScore(score + 1);
+        setScore(prev => prev + 1);
     };
 
     const handleGameOver = () => {
-        setScore(0);
-        const snakeLLStartingValue = getStartingSnakeLLValue(board);
-        setSnake(new LinkedList(snakeLLStartingValue));
-        setFoodCell(snakeLLStartingValue.cell + 5);
-        setSnakeCells(new Set([snakeLLStartingValue.cell]));
-        setDirection(Direction.RIGHT);
+        // stop the game loop
+        setGameOver(true);
+        // persist high score
+        setHighScore(prev => {
+            const newHigh = Math.max(prev, score);
+            try {
+                localStorage.setItem('snake_high_score', String(newHigh));
+            } catch (e) {
+                // ignore
+            }
+            return newHigh;
+        });
     };
 
     return (
@@ -207,12 +266,31 @@ const Board = () => {
                                 foodCell,
                                 foodShouldReverseDirection,
                                 snakeCells,
+                                obstacles,
                             );
                             return <div key={cellIdx} className={className}></div>;
                         })}
                     </div>
                 ))}
             </div>
+
+            {gameOver && (
+                <div className="overlay">
+                    <div className="game-over">
+                        <h2>Game Over</h2>
+                        <p>Score: {score}</p>
+                        <p>Highest Score: {highScore}</p>
+                        <div style={{ display: 'flex', gap: 12, justifyContent: 'center' }}>
+                            <button className="new-game-btn" onClick={startNewGame}>
+                                New Game
+                            </button>
+                            <button className="new-game-btn" onClick={onExit}>
+                                Exit
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </>
     );
 };
@@ -228,6 +306,18 @@ const createBoard = BOARD_SIZE => {
         board.push(currentRow);
     }
     return board;
+};
+
+const createObstacles = (board, count, avoidCell) => {
+    const max = BOARD_SIZE * BOARD_SIZE;
+    const obstacles = new Set();
+    // simple random placement avoiding the starting cell
+    while (obstacles.size < count) {
+        const cell = randomIntFromInterval(1, max);
+        if (cell === avoidCell) continue;
+        obstacles.add(cell);
+    }
+    return obstacles;
 };
 
 const getCoordsInDirection = (coords, direction) => {
@@ -320,8 +410,10 @@ const getCellClassName = (
     foodCell,
     foodShouldReverseDirection,
     snakeCells,
+    obstacles,
 ) => {
     let className = 'cell';
+    if (snakeCells.has(cellValue)) return 'cell cell-green';
     if (cellValue === foodCell) {
         if (foodShouldReverseDirection) {
             className = 'cell cell-purple';
@@ -329,7 +421,7 @@ const getCellClassName = (
             className = 'cell cell-red';
         }
     }
-    if (snakeCells.has(cellValue)) className = 'cell cell-green';
+    if (obstacles && obstacles.has(cellValue)) className = 'cell cell-obstacle';
 
     return className;
 };

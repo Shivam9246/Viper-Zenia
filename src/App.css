@@ -1,5 +1,4 @@
 .App {
-  background-color: #282c34;
   min-height: 100vh;
   display: flex;
   flex-direction: column;
@@ -8,3 +7,50 @@
   font-size: calc(10px + 2vmin);
   color: white;
 }
+
+/* Home screen styling */
+.App.home {
+  background-color: #0f1720;
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='1200' height='800' viewBox='0 0 1200 800'><defs><linearGradient id='g' x1='0' x2='1'><stop offset='0' stop-color='%23222' /><stop offset='1' stop-color='%23111' /></linearGradient></defs><rect width='1200' height='800' fill='url(%23g)' /><g opacity='0.07' fill='%23bfe6a6'><path d='M150 400c20-60 100-80 140-40s20 120-40 140-120-20-140-100z' /><path d='M400 200c30-80 140-100 200-50s30 220-80 240-210-60-120-190z' /><path d='M900 100c40-60 160-70 210-20s35 180-50 200-240-40-160-180z' /></g><g opacity='0.06' fill='none' stroke='%239ecf6b' stroke-width='8'><path d='M40 750c200-80 300-200 540-200 240 0 420 160 580 200' stroke-linecap='round' stroke-linejoin='round'/></g></svg>");
+  background-size: cover;
+  background-position: center;
+}
+
+.home-inner {
+  text-align: center;
+  padding: 40px 28px;
+  backdrop-filter: blur(6px) saturate(120%);
+  border-radius: 12px;
+}
+
+.home-title {
+  font-size: 48px;
+  margin: 0 0 8px 0;
+  color: #f8fafc;
+  text-shadow: 0 6px 24px rgba(0,0,0,0.6);
+}
+
+.home-sub { color: #cbd5e1; margin: 0 0 18px 0; }
+
+.home-controls { display: flex; gap: 14px; justify-content: center; margin-bottom: 12px; }
+
+.level-btn {
+  padding: 12px 20px;
+  border-radius: 10px;
+  border: none;
+  cursor: pointer;
+  font-weight: 600;
+  background: linear-gradient(180deg,#6ee7b7,#10b981);
+  color: #072f22;
+  box-shadow: 0 8px 20px rgba(16,185,129,0.12), inset 0 -2px 0 rgba(0,0,0,0.08);
+  transition: transform .14s ease, box-shadow .14s ease;
+}
+
+.level-btn:hover { transform: translateY(-3px); box-shadow: 0 12px 30px rgba(16,185,129,0.18); }
+
+.level-btn-2 { background: linear-gradient(180deg,#93c5fd,#3b82f6); color: #05204a; }
+
+.home-hint { color: #94a3b8; display: block; margin-top: 6px; }
+
+/* Keep playing view plain so board looks consistent */
+.App.playing { background: #0b0f12; }
